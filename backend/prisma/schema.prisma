@@ -1,0 +1,119 @@
+// schema.prisma
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  id             Int             @id @default(autoincrement()) @map("Id_producto")
+  nombre         String          @map("Nombre_producto") @db.VarChar(150)
+  nroLote        String?         @map("NroLote") @db.VarChar(50)
+  fecRegistro    DateTime        @default(now()) @map("Fec_registro")
+  costo          Decimal         @default(0) @map("Costo") @db.Decimal(18, 4)
+  precioVenta    Decimal         @default(0) @map("PrecioVenta") @db.Decimal(18, 4)
+  
+  compraDets     CompraDet[]
+  ventaDets      VentaDet[]
+  movimientoDets MovimientoDet[]
+
+  @@map("Productos")
+}
+
+model CompraCab {
+  id          Int         @id @default(autoincrement()) @map("Id_CompraCab")
+  fecRegistro DateTime    @default(now()) @map("FecRegistro")
+  subTotal    Decimal     @default(0) @map("SubTotal") @db.Decimal(18, 4)
+  igv         Decimal     @default(0) @map("Igv") @db.Decimal(18, 4)
+  total       Decimal     @default(0) @map("Total") @db.Decimal(18, 4)
+  
+  compraDets  CompraDet[]
+
+  @@map("CompraCab")
+}
+
+model CompraDet {
+  id          Int       @id @default(autoincrement()) @map("Id_CompraDet")
+  idCompraCab Int       @map("Id_CompraCab")
+  idProducto  Int       @map("Id_producto")
+  cantidad    Int       @map("Cantidad")
+  precio      Decimal   @map("Precio") @db.Decimal(18, 4)
+  subTotal    Decimal   @default(0) @map("Sub_Total") @db.Decimal(18, 4)
+  igv         Decimal   @default(0) @map("Igv") @db.Decimal(18, 4)
+  total       Decimal   @default(0) @map("Total") @db.Decimal(18, 4)
+
+  compraCab   CompraCab @relation(fields: [idCompraCab], references: [id], onDelete: Cascade)
+  producto    Product   @relation(fields: [idProducto], references: [id])
+
+  @@map("CompraDet")
+}
+
+model VentaCab {
+  id          Int        @id @default(autoincrement()) @map("Id_VentaCab")
+  fecRegistro DateTime   @default(now()) @map("fecRegistro")
+  subTotal    Decimal    @default(0) @map("SubTotal") @db.Decimal(18, 4)
+  igv         Decimal    @default(0) @map("Igv") @db.Decimal(18, 4)
+  total       Decimal    @default(0) @map("Total") @db.Decimal(18, 4)
+  
+  ventaDets   VentaDet[]
+
+  @@map("VentaCab")
+}
+
+model VentaDet {
+  id          Int      @id @default(autoincrement()) @map("Id_VentaDet")
+  idVentaCab  Int      @map("Id_VentaCab")
+  idProducto  Int      @map("Id_producto")
+  cantidad    Int      @map("Cantidad")
+  precio      Decimal  @map("Precio") @db.Decimal(18, 4)
+  subTotal    Decimal  @default(0) @map("Sub_Total") @db.Decimal(18, 4)
+  igv         Decimal  @default(0) @map("Igv") @db.Decimal(18, 4)
+  total       Decimal  @default(0) @map("Total") @db.Decimal(18, 4)
+
+  ventaCab    VentaCab @relation(fields: [idVentaCab], references: [id], onDelete: Cascade)
+  producto    Product  @relation(fields: [idProducto], references: [id])
+
+  @@map("VentaDet")
+}
+
+model MovimientoCab {
+  id                 Int             @id @default(autoincrement()) @map("Id_MovimientoCab")
+  fecRegistro        DateTime        @default(now()) @map("Fec_registro")
+  idTipoMovimiento   Int             @map("Id_TipoMovimiento") // 1 = Entrada, 2 = Salida
+  idDocumentoOrigen  Int             @map("Id_DocumentoOrigen")
+  
+  movimientoDets     MovimientoDet[]
+
+  @@map("MovimientoCab")
+}
+
+model MovimientoDet {
+  id              Int           @id @default(autoincrement()) @map("Id_MovimientoDet")
+  idMovimientoCab Int           @map("Id_movimientocab")
+  idProducto      Int           @map("Id_Producto")
+  cantidad        Int           @map("Cantidad")
+
+  movimientoCab   MovimientoCab @relation(fields: [idMovimientoCab], references: [id], onDelete: Cascade)
+  producto        Product       @relation(fields: [idProducto], references: [id])
+
+  @@map("Movimientodet")
+}
+
+model AuditProductos {
+  id                  Int      @id @default(autoincrement()) @map("Id_Audit")
+  idProducto          Int      @map("Id_Producto")
+  nombreProducto      String   @map("Nombre_producto") @db.VarChar(150)
+  costoAnterior       Decimal? @map("Costo_Anterior") @db.Decimal(18, 4)
+  costoNuevo          Decimal? @map("Costo_Nuevo") @db.Decimal(18, 4)
+  precioVentaAnterior Decimal? @map("PrecioVenta_Anterior") @db.Decimal(18, 4)
+  precioVentaNuevo    Decimal? @map("PrecioVenta_Nuevo") @db.Decimal(18, 4)
+  accion              String   @map("Accion") @db.VarChar(50)
+  usuario             String   @default(dbgenerated("ORIGINAL_LOGIN()")) @map("Usuario") @db.VarChar(100)
+  fecha               DateTime @default(now()) @map("Fecha")
+
+  @@map("Audit_Productos")
+}
